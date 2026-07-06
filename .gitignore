@@ -13,3 +13,12 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Logs & system dumps
+crash_*.txt
+live_log.txt
+tombstones.txt
+vot_*.txt
+
+# IDE
+.idea/

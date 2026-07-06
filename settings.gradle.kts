@@ -21,4 +21,10 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShopTV"
 include(":app")
- 
+include(":core:model")
+include(":core:network")
+include(":core:common")
+include(":feature:magnit")
+include(":feature:lenta")
+include(":feature:perekrestok")
+include(":feature:cart")
