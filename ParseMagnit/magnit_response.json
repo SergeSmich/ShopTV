@@ -1,0 +1,532 @@
+{
+    "fastFilters": [],
+    "filters": [
+        {
+            "elements": [
+                {
+                    "count": 3,
+                    "name": "Bibigo"
+                },
+                {
+                    "count": 6,
+                    "name": "Dr. Oetker"
+                },
+                {
+                    "count": 4,
+                    "name": "Green Ribbon"
+                },
+                {
+                    "count": 3,
+                    "name": "Gusto di Roma"
+                },
+                {
+                    "count": 4,
+                    "name": "Haas"
+                },
+                {
+                    "count": 4,
+                    "name": "Heinz"
+                },
+                {
+                    "count": 4,
+                    "name": "Hochland"
+                },
+                {
+                    "count": 6,
+                    "name": "La Fresh"
+                },
+                {
+                    "count": 3,
+                    "name": "Landkaas"
+                },
+                {
+                    "count": 6,
+                    "name": "Maggi"
+                },
+                {
+                    "count": 6,
+                    "name": "Makfa"
+                },
+                {
+                    "count": 9,
+                    "name": "Premiere of taste"
+                },
+                {
+                    "count": 3,
+                    "name": "Pretto"
+                },
+                {
+                    "count": 4,
+                    "name": "Арнаут"
+                },
+                {
+                    "count": 3,
+                    "name": "Белебеевский"
+                },
+                {
+                    "count": 3,
+                    "name": "Ближние Горки"
+                },
+                {
+                    "count": 10,
+                    "name": "Большая Кружка"
+                },
+                {
+                    "count": 12,
+                    "name": "Брест-Литовск"
+                },
+                {
+                    "count": 5,
+                    "name": "Великолукский МК"
+                },
+                {
+                    "count": 3,
+                    "name": "Велком"
+                },
+                {
+                    "count": 7,
+                    "name": "Вкуснотеево"
+                },
+                {
+                    "count": 13,
+                    "name": "Восточный Гость"
+                },
+                {
+                    "count": 3,
+                    "name": "Вязанка"
+                },
+                {
+                    "count": 5,
+                    "name": "Горячая Штучка"
+                },
+                {
+                    "count": 6,
+                    "name": "Дарница"
+                },
+                {
+                    "count": 3,
+                    "name": "Добрый"
+                },
+                {
+                    "count": 9,
+                    "name": "Домик в Деревне"
+                },
+                {
+                    "count": 12,
+                    "name": "Каравай"
+                },
+                {
+                    "count": 5,
+                    "name": "М Здоровье"
+                },
+                {
+                    "count": 22,
+                    "name": "М Свежесть"
+                },
+                {
+                    "count": 30,
+                    "name": "Магнит"
+                },
+                {
+                    "count": 5,
+                    "name": "Махеевъ"
+                },
+                {
+                    "count": 5,
+                    "name": "Минская Марка"
+                },
+                {
+                    "count": 4,
+                    "name": "Мираторг"
+                },
+                {
+                    "count": 29,
+                    "name": "Моя цена"
+                },
+                {
+                    "count": 11,
+                    "name": "Папа Может"
+                },
+                {
+                    "count": 5,
+                    "name": "Петелинка"
+                },
+                {
+                    "count": 9,
+                    "name": "Пискаревский"
+                },
+                {
+                    "count": 11,
+                    "name": "Простоквашино"
+                },
+                {
+                    "count": 25,
+                    "name": "Различные бренды"
+                },
+                {
+                    "count": 5,
+                    "name": "Резной Палисад"
+                },
+                {
+                    "count": 5,
+                    "name": "Русское Море"
+                },
+                {
+                    "count": 4,
+                    "name": "Святой Источник"
+                },
+                {
+                    "count": 7,
+                    "name": "Северное Молоко"
+                },
+                {
+                    "count": 4,
+                    "name": "Слобода"
+                },
+                {
+                    "count": 4,
+                    "name": "Стародворье"
+                },
+                {
+                    "count": 4,
+                    "name": "Увелка"
+                },
+                {
+                    "count": 7,
+                    "name": "Хлебный Дом"
+                },
+                {
+                    "count": 4,
+                    "name": "Черкизово"
+                },
+                {
+                    "count": 6,
+                    "name": "Шебекинские"
+                }
+            ],
+            "id": "brands",
+            "title": "Бренд",
+            "type": "grid"
+        },
+        {
+            "elements": null,
+            "id": "priceRange",
+            "maxValue": 1055.89,
+            "minValue": 7,
+            "step": 0.01,
+            "title": "Цена",
+            "type": "range",
+            "unit": "₽"
+        },
+        {
+            "elements": [
+                {
+                    "count": 3,
+                    "name": "Банка для консервирования"
+                },
+                {
+                    "count": 8,
+                    "name": "Батон"
+                },
+                {
+                    "count": 4,
+                    "name": "Бекон"
+                },
+                {
+                    "count": 7,
+                    "name": "Ветчина"
+                },
+                {
+                    "count": 3,
+                    "name": "Влажный корм для кошек"
+                },
+                {
+                    "count": 4,
+                    "name": "Вода газированная"
+                },
+                {
+                    "count": 8,
+                    "name": "Вода негазированная"
+                },
+                {
+                    "count": 3,
+                    "name": "Дамплинги"
+                },
+                {
+                    "count": 4,
+                    "name": "Дрожжи"
+                },
+                {
+                    "count": 4,
+                    "name": "Зелень"
+                },
+                {
+                    "count": 6,
+                    "name": "Йогурт"
+                },
+                {
+                    "count": 3,
+                    "name": "Кефир"
+                },
+                {
+                    "count": 3,
+                    "name": "Кола"
+                },
+                {
+                    "count": 15,
+                    "name": "Колбаса"
+                },
+                {
+                    "count": 5,
+                    "name": "Кофе растворимый"
+                },
+                {
+                    "count": 3,
+                    "name": "Крекеры"
+                },
+                {
+                    "count": 3,
+                    "name": "Крупа гречневая"
+                },
+                {
+                    "count": 4,
+                    "name": "Лаваш"
+                },
+                {
+                    "count": 3,
+                    "name": "Леденцы"
+                },
+                {
+                    "count": 9,
+                    "name": "Майонез"
+                },
+                {
+                    "count": 3,
+                    "name": "Макаронные изделия спагетти"
+                },
+                {
+                    "count": 7,
+                    "name": "Макаронные изделия фигурные"
+                },
+                {
+                    "count": 3,
+                    "name": "Масло подсолнечное"
+                },
+                {
+                    "count": 8,
+                    "name": "Масло сливочное"
+                },
+                {
+                    "count": 21,
+                    "name": "Молоко"
+                },
+                {
+                    "count": 8,
+                    "name": "Мороженое"
+                },
+                {
+                    "count": 6,
+                    "name": "Мука пшеничная"
+                },
+                {
+                    "count": 5,
+                    "name": "Огурцы"
+                },
+                {
+                    "count": 11,
+                    "name": "Пельмени"
+                },
+                {
+                    "count": 3,
+                    "name": "Перец сладкий"
+                },
+                {
+                    "count": 10,
+                    "name": "Печенье"
+                },
+                {
+                    "count": 5,
+                    "name": "Прокладки"
+                },
+                {
+                    "count": 4,
+                    "name": "Рис"
+                },
+                {
+                    "count": 8,
+                    "name": "Сливки питьевые"
+                },
+                {
+                    "count": 4,
+                    "name": "Смесь для вторых блюд"
+                },
+                {
+                    "count": 11,
+                    "name": "Сметана"
+                },
+                {
+                    "count": 6,
+                    "name": "Соль"
+                },
+                {
+                    "count": 8,
+                    "name": "Сосиски"
+                },
+                {
+                    "count": 9,
+                    "name": "Соус"
+                },
+                {
+                    "count": 4,
+                    "name": "Сыр мягкий"
+                },
+                {
+                    "count": 20,
+                    "name": "Сыр полутвердый"
+                },
+                {
+                    "count": 6,
+                    "name": "Сыр рассольный"
+                },
+                {
+                    "count": 6,
+                    "name": "Сыр твердый"
+                },
+                {
+                    "count": 5,
+                    "name": "Сыр творожный"
+                },
+                {
+                    "count": 4,
+                    "name": "Творог мягкий"
+                },
+                {
+                    "count": 6,
+                    "name": "Творог рассыпчатый"
+                },
+                {
+                    "count": 5,
+                    "name": "Фарш"
+                },
+                {
+                    "count": 17,
+                    "name": "Хлеб"
+                },
+                {
+                    "count": 7,
+                    "name": "Шоколадная плитка"
+                },
+                {
+                    "count": 5,
+                    "name": "Яйцо куриное"
+                }
+            ],
+            "id": "productTypes",
+            "title": "Тип продукта",
+            "type": "grid"
+        },
+        {
+            "elements": [
+                {
+                    "count": 1,
+                    "name": "Dent Blanc"
+                },
+                {
+                    "count": 1,
+                    "name": "Hayat Kimya"
+                },
+                {
+                    "count": 4,
+                    "name": "IDS Borjomi"
+                },
+                {
+                    "count": 1,
+                    "name": "Kimberly-Clark"
+                },
+                {
+                    "count": 1,
+                    "name": "Ningbo Mascube"
+                },
+                {
+                    "count": 1,
+                    "name": "Pez Production Europe"
+                },
+                {
+                    "count": 2,
+                    "name": "Reckitt Benckiser"
+                },
+                {
+                    "count": 1,
+                    "name": "Аквалайн"
+                },
+                {
+                    "count": 1,
+                    "name": "Аромат"
+                },
+                {
+                    "count": 1,
+                    "name": "Архбум Тиссью Групп"
+                },
+                {
+                    "count": 2,
+                    "name": "Белла"
+                },
+                {
+                    "count": 2,
+                    "name": "Бобимэкс"
+                },
+                {
+                    "count": 1,
+                    "name": "Дикомп-Классик"
+                },
+                {
+                    "count": 1,
+                    "name": "Завод Напитков"
+                },
+                {
+                    "count": 2,
+                    "name": "Коттон Клаб"
+                },
+                {
+                    "count": 1,
+                    "name": "Мирролла"
+                },
+                {
+                    "count": 1,
+                    "name": "Мясной Край"
+                },
+                {
+                    "count": 3,
+                    "name": "Новые Технологии"
+                },
+                {
+                    "count": 1,
+                    "name": "Фарм-Про ПК"
+                },
+                {
+                    "count": 1,
+                    "name": "Фарминдустрия"
+                },
+                {
+                    "count": 1,
+                    "name": "Хайджин Текнолоджиз"
+                },
+                {
+                    "count": 1,
+                    "name": "Шишкин Лес"
+                },
+                {
+                    "count": 1,
+                    "name": "Эвоком"
+                }
+            ],
+            "id": "vendors",
+            "title": "Производитель",
+            "type": "grid"
+        }
+    ],
+    "pagination": {
+        "totalCount": 724
+    },
+    "resultId": "26395b30-bcc1-4458-999f-6f6990efed36"
+}

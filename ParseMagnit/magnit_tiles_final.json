@@ -1,0 +1,61 @@
+import json
+import requests
+
+url = "https://magnit.ru/webgate/v1/tiles"
+
+# Вставьте сюда вашу АКТУАЛЬНУЮ строку cookie из браузера
+cookie_str = "mg_udi=350efbb0-376a-4b9f-84d2-54591c36673c; _ym_uid=1772023210292731017; x_shop_type=MM; shopCode=%22781225%22; mg_at=%7B%22access%22%3A%22...%22%7D"
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+    "Accept": "*/*",
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Origin": "https://magnit.ru",
+    "Referer": "https://magnit.ru/",
+    "Connection": "keep-alive",
+    "Cookie": cookie_str,
+    
+    "x-app-version": "2026.6.24-15.23",
+    "x-client-name": "magnit",
+    "x-device-platform": "Web",
+    "x-device-id": "350efbb0-376a-4b9f-84d2-54591c36673c",
+    "x-device-tag": "5ef89830-46e1-4e87-b349-b9e87363ae26_0",
+    "x-new-magnit": "true",
+    "x-platform-version": "Windows Chrome 149",
+    
+    "IpAddress": "188.227.81.2",
+    "PlacementId": "delivery_express"
+}
+
+# Добавили фильтр по категории
+params = {
+    "storeCodes[]": "781225",
+    "catalogType": "2",
+    "storeType": "express",
+    "includeAdultGoods": "true",
+    "categoryIDs[]": "63963"  # Молочное
+}
+
+print("Запрашиваем товары из категории 'Молочное'...")
+
+try:
+    response = requests.get(url, params=params, headers=headers, timeout=15)
+    
+    if response.status_code == 200:
+        data = response.json()
+        print(" [УСПЕХ] Ответ получен!")
+        
+        # Сохраняем в новый файл, чтобы не затереть категории
+        with open("magnit_items.json", "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+        print("Данные сохранены в файл 'magnit_items.json'")
+        
+        if isinstance(data, dict):
+            print("Новые ключи в ответе:", list(data.keys()))
+            
+    else:
+        print(f" [ОШИБКА] Статус код: {response.status_code}")
+        print("Ответ сервера:", response.text[:500])
+
+except Exception as e:
+    print(f" Ошибка: {e}")

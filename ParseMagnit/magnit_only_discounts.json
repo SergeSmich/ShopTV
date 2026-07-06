@@ -1,0 +1,74 @@
+[
+    {
+        "title": "Масло сливочное Белебеевский Традиционное 82.5% 170г",
+        "price": 179.99,
+        "old_price": 359.99,
+        "discount_rub": 180.0,
+        "discount_percent": 50,
+        "quantity": 65
+    },
+    {
+        "title": "Сыр Николаевские сыроварни Российский 50% 180г",
+        "price": 159.99,
+        "old_price": 249.99,
+        "discount_rub": 90.0,
+        "discount_percent": 36,
+        "quantity": 56
+    },
+    {
+        "title": "Сыр Брест-Литовск Королевский полутвёрдый 45% 200г",
+        "price": 169.99,
+        "old_price": 249.99,
+        "discount_rub": 80.0,
+        "discount_percent": 32,
+        "quantity": 6
+    },
+    {
+        "title": "Сыр Сыробогатов Король сыров с ароматом топленого молока 40% 180г",
+        "price": 169.99,
+        "old_price": 249.99,
+        "discount_rub": 80.0,
+        "discount_percent": 32,
+        "quantity": 28
+    },
+    {
+        "title": "Майонез Mr. Ricco Провансаль 67% 630г",
+        "price": 149.99,
+        "old_price": 209.99,
+        "discount_rub": 60.0,
+        "discount_percent": 29,
+        "quantity": 4
+    },
+    {
+        "title": "Творожные палочки Свитлогорье ванильные в карамельной глазури 23% 180г",
+        "price": 169.99,
+        "old_price": 229.99,
+        "discount_rub": 60.0,
+        "discount_percent": 26,
+        "quantity": 12
+    },
+    {
+        "title": "Куриное яйцо СО 10шт в ассортименте",
+        "price": 99.99,
+        "old_price": 129.99,
+        "discount_rub": 30.0,
+        "discount_percent": 23,
+        "quantity": 4
+    },
+    {
+        "title": "Сыр Белебеевский Голландский 45% 190г",
+        "price": 179.99,
+        "old_price": 219.99,
+        "discount_rub": 40.0,
+        "discount_percent": 18,
+        "quantity": 18
+    },
+    {
+        "title": "Молоко Коровка из Кореновки пастеризованное 2.7% 900г",
+        "price": 94.99,
+        "old_price": 109.99,
+        "discount_rub": 15.0,
+        "discount_percent": 14,
+        "quantity": 26
+    }
+]
