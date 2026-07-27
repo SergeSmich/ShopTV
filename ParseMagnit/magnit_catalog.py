@@ -71,6 +71,18 @@ FALLBACK_CATEGORIES = [
     ("Заморозка", "64467", "category"),
 ]
 
+# Подсмотренные в браузере адреса разделов, которые не открываются
+# по заглушке "-category". Магнит требует точный slug.
+KNOWN_SLUGS = {
+    "66205": "novinki_mesyatsa_mm_17077",
+    "63319": "supertseny_mm_8845",
+    "114540": "vozmite_k_matchu",
+    "65055": "testmmgotovaya_eda",
+    "63963": "testmmmolochnyy_prilavok",
+    "64697": "testmmsladosti",
+    "64467": "testmmzamorozka",
+}
+
 # Порядок строк на экране телевизора
 CATEGORY_ORDER = [
     "Скидки", "Молочное", "Мясо и рыба", "Готовая еда",
@@ -339,7 +351,9 @@ def main():
 
     session = requests.Session()
     categories = fetch_categories(session)
-    slugs = fetch_slugs(session)
+
+    slugs = dict(KNOWN_SLUGS)
+    slugs.update(fetch_slugs(session))
 
     print("\nШаг 2. Товары по категориям")
     all_products = []
