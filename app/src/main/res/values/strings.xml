@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">ShopTV</string>
+    <string name="browse_title">Магнит — Каталог</string>
+    <string name="browse_title_with_count">Магнит — %1$d товаров</string>
+    <string name="loading">Загрузка каталога…</string>
 </resources>

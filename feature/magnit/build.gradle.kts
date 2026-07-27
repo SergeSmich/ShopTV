@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -25,9 +26,13 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
+    // api, а не implementation: типы Result, UnifiedProduct и CatalogRow
+    // возвращаются наружу и должны быть видны в :app
+    api(project(":core:model"))
+    api(project(":core:common"))
     implementation(project(":core:network"))
-    implementation(project(":core:common"))
+
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.leanback)
     implementation(libs.androidx.lifecycle.runtime)
