@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.shoptv.app.R
 import com.shoptv.app.presentation.common.ProductCardPresenter
+import com.shoptv.app.presentation.search.SearchActivity
 import com.shoptv.core.model.UnifiedProduct
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -37,6 +38,11 @@ class MainFragment : BrowseSupportFragment() {
 
         setOnItemViewClickedListener { _, item, _, _ ->
             (item as? UnifiedProduct)?.let { openProduct(it) }
+        }
+
+        // лупа в шапке — Leanback сам её рисует, нам нужен только переход
+        setOnSearchClickedListener {
+            startActivity(Intent(requireContext(), SearchActivity::class.java))
         }
 
         observeViewModel()

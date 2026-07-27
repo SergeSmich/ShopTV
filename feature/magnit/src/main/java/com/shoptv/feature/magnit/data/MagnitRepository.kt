@@ -49,6 +49,46 @@ class MagnitRepository(
         }
     }
 
+    /**
+     * Поиск по каталогу.
+     *
+     * Ищем по локальному слепку: у Магнита нет публичного эндпоинта поиска,
+     * а гонять запрос на каждое нажатие кнопки пульта всё равно нельзя.
+     * Совпадения по началу слова ценятся выше, чем внутри слова, — так
+     * "мол" сначала покажет молоко, а не "Шоколад молочный".
+     */
+    suspend fun search(query: String, limit: Int = 60): List<UnifiedProduct> {
+        val needle = query.trim().lowercase()
+        if (needle.length < MIN_QUERY) return emptyList()
+
+        val words = needle.split(' ').filter { it.isNotBlank() }
+
+        return localCatalog.getAllProducts()
+            .mapNotNull { product ->
+                val title = product.title.lowercase()
+                // все слова запроса должны встретиться в названии
+                if (words.any { !title.contains(it) }) return@mapNotNull null
+
+                val position = title.indexOf(words.first())
+                val startsWord = position == 0 || title.getOrNull(position - 1) == ' '
+                val rank = when {
+                    position == 0 -> 0
+                    startsWord -> 1
+                    else -> 2
+                }
+                product to rank
+            }
+            .sortedWith(
+                compareBy(
+                    { it.second },
+                    { -(it.first.discountPercent ?: 0) },
+                    { it.first.title.length }
+                )
+            )
+            .take(limit)
+            .map { it.first }
+    }
+
     suspend fun getProducts(storeCode: String, page: Int = 1): Result<List<UnifiedProduct>> = try {
         val request = MagnitGoodsRequest(
             storeCodes = listOf(storeCode),
@@ -100,5 +140,6 @@ class MagnitRepository(
         private const val TAG = "MagnitRepository"
         private const val BASE_URL = "https://web-gateway.middle-api.magnit.ru/"
         private const val DEFAULT_STORE = "543358"
+        private const val MIN_QUERY = 2
     }
 }

@@ -3,4 +3,7 @@
     <string name="browse_title">Магнит — Каталог</string>
     <string name="browse_title_with_count">Магнит — %1$d товаров</string>
     <string name="loading">Загрузка каталога…</string>
+    <string name="search_found">Найдено: %1$d</string>
+    <string name="search_nothing_found">Ничего не найдено</string>
+    <string name="search_hint">Поиск товаров</string>
 </resources>
