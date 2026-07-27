@@ -80,10 +80,9 @@ CATEGORY_ORDER = [
 
 REQUEST_PAUSE = 1.0
 
-# Сколько разделов обходить. В меню Магнита их около 700, включая пустые
-# подкатегории — полный обход занимает больше 10 минут.
-# 0 = без ограничения.
-MAX_CATEGORIES = 120
+# Обходим только верхний уровень меню — это 25 разделов и примерно
+# полминуты работы. 0 = без ограничения.
+MAX_CATEGORIES = 0
 
 # Минимум товаров, чтобы раздел попал на экран отдельной строкой
 MIN_ROW_ITEMS = 8
@@ -143,10 +142,14 @@ def extract_menu(html):
     """
     Дерево категорий из меню страницы.
 
-    Меню каталога отрисовано на сервере и лежит в __NUXT_DATA__ пунктами
-    вида {name: "Молочный прилавок", link: "/catalog/107727-bakaleya_copy_106"}.
-    Это и есть источник актуальных разделов: slug'и Магнит меняет,
-    поэтому зашивать их в код бессмысленно.
+    Меню каталога отрисовано на сервере и лежит в __NUXT_DATA__ узлами
+    вида {key, parentKey, id, name, code, url, children}. Из parentKey
+    восстанавливается иерархия: 25 корневых разделов ("Молочный прилавок",
+    "Заморозка", "Сладости") и ~700 подкатегорий под ними.
+
+    Возвращает только корневые: их страницы уже содержат товары, а обход
+    всех семисот занимает больше десяти минут и даёт те же позиции по
+    много раз.
     """
     soup = BeautifulSoup(html, "html.parser")
     script = soup.find("script", id="__NUXT_DATA__")
@@ -166,23 +169,37 @@ def extract_menu(html):
             return deref(t, depth + 1) if isinstance(t, int) else t
         return v
 
-    menu = OrderedDict()
+    nodes = OrderedDict()
     for item in raw:
         if not isinstance(item, dict):
             continue
-        link = deref(item.get("link") or item.get("url") or item.get("href"))
-        name = deref(item.get("name") or item.get("title") or item.get("text"))
-        if not (isinstance(link, str) and isinstance(name, str)):
+        if not {"key", "parentKey", "name", "url"} <= set(item.keys()):
             continue
-        m = re.search(r"/catalog/(\d+)-([a-z0-9_]+)", link)
+
+        key = deref(item["key"])
+        parent = deref(item["parentKey"])
+        name = deref(item["name"])
+        url = deref(item["url"])
+        cat_id = deref(item.get("id"))
+
+        if not (isinstance(key, str) and isinstance(name, str) and isinstance(url, str)):
+            continue
+
+        m = re.search(r"/catalog/(\d+)-([a-z0-9_]+)", url)
         if not m:
             continue
-        cat_id, slug = m.group(1), m.group(2)
-        if slug == "category":
-            continue
-        menu.setdefault(cat_id, (name.strip(), cat_id, slug))
 
-    return list(menu.values())
+        nodes[key] = (name.strip(), str(cat_id or m.group(1)), m.group(2), parent)
+
+    if not nodes:
+        return []
+
+    # верхний уровень: родитель отсутствует в дереве (корень g0000)
+    keys = set(nodes)
+    roots = [v for v in nodes.values() if v[3] not in keys]
+
+    chosen = roots if roots else list(nodes.values())
+    return [(name, cat_id, slug) for name, cat_id, slug, _ in chosen]
 
 
 def fetch_categories(session):
