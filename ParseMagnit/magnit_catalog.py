@@ -54,6 +54,7 @@ HEADERS = {
 }
 
 TILES_URL = "https://magnit.ru/webgate/v1/tiles"
+CATALOG_URL = "https://magnit.ru/catalog"
 
 # Запасной список категорий — ответ /tiles на момент разбора.
 # Используется, если API недоступен.
@@ -131,8 +132,19 @@ def percent_from(sale_percent, price, old_price):
 def fetch_categories(session):
     """Категории из мобильного API. При сбое — запасной список."""
     print("Шаг 1. Категории каталога")
+    # мобильному API нужны свои заголовки, иначе отвечает 400
+    api_headers = dict(HEADERS)
+    api_headers.update({
+        "Accept": "application/json",
+        "x-client-name": "magnit",
+        "x-device-platform": "Web",
+        "x-device-id": "shoptv-parser",
+        "x-app-version": "2026.6.24-17.37",
+        "x-new-magnit": "true",
+        "Referer": "https://magnit.ru/catalog",
+    })
     try:
-        r = session.get(TILES_URL, params=PARAMS, headers=HEADERS, timeout=20)
+        r = session.get(TILES_URL, params=PARAMS, headers=api_headers, timeout=20)
         if r.status_code == 200:
             services = r.json().get("services", [])
             result = []
@@ -152,17 +164,54 @@ def fetch_categories(session):
     return list(FALLBACK_CATEGORIES)
 
 
-def parse_category(session, name, cat_id):
-    """Возвращает список товаров категории со всеми полями."""
-    url = "https://magnit.ru/catalog/%s-category" % cat_id
-    try:
-        r = session.get(url, params=PARAMS, headers=HEADERS, timeout=20)
-    except Exception as e:
-        print("       ошибка запроса: %s" % e)
-        return []
+def fetch_slugs(session):
+    """
+    Карта {id_категории: slug} со страницы каталога.
 
-    if r.status_code != 200:
-        print("       HTTP %s — пропускаем" % r.status_code)
+    Адрес категории имеет вид /catalog/63963-testmmmolochnyy_prilavok.
+    Заглушка "-category" срабатывает не всегда: часть разделов отдаёт 404,
+    поэтому берём настоящие slug'и из вёрстки каталога.
+    """
+    print("Шаг 1b. Адреса категорий")
+    try:
+        r = session.get(CATALOG_URL, params=PARAMS, headers=HEADERS, timeout=20)
+        if r.status_code != 200:
+            print("  HTTP %s — обойдёмся заглушкой" % r.status_code)
+            return {}
+        found = re.findall(r"/catalog/(\d+)-([a-z0-9_]+)", r.text)
+        slugs = {}
+        for cat_id, slug in found:
+            slugs.setdefault(cat_id, slug)
+        print("  найдено адресов: %d" % len(slugs))
+        return slugs
+    except Exception as e:
+        print("  не удалось получить (%s) — обойдёмся заглушкой" % e)
+        return {}
+
+
+def parse_category(session, name, cat_id, slugs):
+    """Возвращает список товаров категории со всеми полями."""
+    # сначала настоящий адрес, затем заглушка как запасной вариант
+    candidates = []
+    slug = slugs.get(cat_id)
+    if slug:
+        candidates.append("https://magnit.ru/catalog/%s-%s" % (cat_id, slug))
+    candidates.append("https://magnit.ru/catalog/%s-category" % cat_id)
+
+    r = None
+    for url in candidates:
+        try:
+            resp = session.get(url, params=PARAMS, headers=HEADERS, timeout=20)
+        except Exception as e:
+            print("       ошибка запроса: %s" % e)
+            continue
+        if resp.status_code == 200:
+            r = resp
+            break
+        print("       HTTP %s на %s" % (resp.status_code, url.split("/")[-1]))
+
+    if r is None:
+        print("       категория недоступна — пропускаем")
         return []
 
     soup = BeautifulSoup(r.text, "html.parser")
@@ -266,6 +315,7 @@ def main():
 
     session = requests.Session()
     categories = fetch_categories(session)
+    slugs = fetch_slugs(session)
 
     print("\nШаг 2. Товары по категориям")
     all_products = []
@@ -273,7 +323,7 @@ def main():
 
     for i, (name, cat_id) in enumerate(categories, 1):
         print("  [%d/%d] %s" % (i, len(categories), name))
-        items = parse_category(session, name, cat_id)
+        items = parse_category(session, name, cat_id, slugs)
 
         added = 0
         for p in items:
