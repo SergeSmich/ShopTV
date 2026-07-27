@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ShopTV</string>
+    <string name="browse_title">МАГНИТ — КАТАЛОГ</string>
+    <string name="card_image_description">Изображение товара</string>
+    <string name="catalog_empty">Каталог пуст. Обновите данные скриптом ParseMagnit/build_catalog.py</string>
+    <string name="row_no_image">Нет фото</string>
 </resources>

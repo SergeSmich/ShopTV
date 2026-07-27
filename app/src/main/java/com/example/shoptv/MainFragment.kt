@@ -1,124 +1,98 @@
-﻿package com.example.shoptv
+package com.example.shoptv
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.ImageView
-import android.widget.TextView
-import android.util.TypedValue
-import android.content.Context
-import android.view.Gravity
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.leanback.app.BrowseSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
-// ...existing code...
 import androidx.leanback.widget.ListRow
 import androidx.leanback.widget.ListRowPresenter
-import androidx.leanback.widget.Presenter
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.example.shoptv.network.MockProductRepository
 import com.example.shoptv.model.Product
-import coil.load
+import com.example.shoptv.presenter.ProductCardPresenter
+import com.example.shoptv.repository.MagnitCatalogRepository
+import kotlinx.coroutines.launch
 
+/**
+ * Главный экран: каталог Магнита строками (Скидки дня, Молочное, Заморозка и т.д.).
+ * Данные читаются из assets/magnit_catalog.json.
+ */
 class MainFragment : BrowseSupportFragment() {
+
+    private lateinit var repository: MagnitCatalogRepository
+    private val rowsAdapter = ArrayObjectAdapter(ListRowPresenter())
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // МЕНЯЕМ ТУТ, чтобы проверить, обновилось ли приложение
-        title = "ЛЕНТА — КАТАЛОГ"
+        repository = MagnitCatalogRepository(requireContext().applicationContext)
 
-        setupAdapter()
+        setupUi()
+        adapter = rowsAdapter
+        loadCatalog()
     }
 
-    private fun setupAdapter() {
-        val mRowsAdapter = ArrayObjectAdapter(ListRowPresenter())
+    private fun setupUi() {
+        title = getString(R.string.browse_title)
+        headersState = HEADERS_ENABLED
+        isHeadersTransitionOnBackEnabled = true
+        brandColor = ContextCompat.getColor(requireContext(), R.color.magnit_red)
+        searchAffordanceColor = ContextCompat.getColor(requireContext(), R.color.magnit_red)
+        view?.setBackgroundColor(Color.parseColor("#141414"))
 
-        // Создаем категорию
-        val header = HeaderItem(0, "Популярное")
-        val cardPresenter = ProductCardPresenter()
-        val listRowAdapter = ArrayObjectAdapter(cardPresenter)
-
-         // Добавляем строку и адаптер
-         mRowsAdapter.add(ListRow(header, listRowAdapter))
-         adapter = mRowsAdapter
-
-         // Используем mock-данные (lenta.com блокирует скрейпинг в эмуляторе)
-         lifecycleScope.launch {
-             val mockRepo = MockProductRepository()
-             val products = try {
-                 withContext(Dispatchers.IO) { mockRepo.getPopularProducts() }
-             } catch (e: Exception) {
-                 emptyList<Product>()
-             }
-
-             // Всегда есть товары из mock-данных
-             for (p in products) listRowAdapter.add(p)
-         }
-     }
-
-    // Вспомогательный контейнер для представлений карточки
-    private data class ViewRefs(val image: ImageView, val title: TextView, val content: TextView)
-
-    // Презентер для отрисовки карточек
-    inner class ProductCardPresenter : Presenter() {
-        private fun dpToPx(ctx: Context, dp: Int): Int = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), ctx.resources.displayMetrics
-        ).toInt()
-
-        override fun onCreateViewHolder(parent: ViewGroup): ViewHolder {
-            val ctx = parent.context
-            val container = LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                isFocusable = true
-                isFocusableInTouchMode = true
-                gravity = Gravity.CENTER
-                val padding = dpToPx(ctx, 8)
-                setPadding(padding, padding, padding, padding)
-            }
-
-            val image = ImageView(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(dpToPx(ctx, 313), dpToPx(ctx, 176))
-                scaleType = ImageView.ScaleType.CENTER_CROP
-            }
-            val titleView = TextView(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-            val contentView = TextView(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-
-            container.addView(image)
-            container.addView(titleView)
-            container.addView(contentView)
-
-            // store references in tag for onBind
-            container.tag = ViewRefs(image, titleView, contentView)
-
-            return ViewHolder(container)
+        setOnItemViewClickedListener { _, item, _, _ ->
+            (item as? Product)?.let { openProduct(it) }
         }
+    }
 
-        override fun onBindViewHolder(viewHolder: ViewHolder, item: Any) {
-            val product = item as Product
-            val container = viewHolder.view as LinearLayout
-            val refs = container.tag as? ViewRefs
-            if (refs != null) {
-                refs.title.text = product.title
-                refs.content.text = product.price
-                // load image asynchronously with Coil (imageUrl may be null)
-                refs.image.load(product.imageUrl) {
-                    crossfade(true)
-                    placeholder(android.R.color.darker_gray)
+    private fun loadCatalog() {
+        lifecycleScope.launch {
+            val catalog = repository.getCatalog()
+
+            if (catalog.rows.isEmpty()) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.catalog_empty),
+                    Toast.LENGTH_LONG
+                ).show()
+                return@launch
+            }
+
+            rowsAdapter.clear()
+            val cardPresenter = ProductCardPresenter()
+
+            catalog.rows.forEachIndexed { index, row ->
+                val listRowAdapter = ArrayObjectAdapter(cardPresenter).apply {
+                    addAll(0, row.items)
                 }
+                val header = HeaderItem(
+                    index.toLong(),
+                    "${row.title} (${row.items.size})"
+                )
+                rowsAdapter.add(ListRow(header, listRowAdapter))
             }
-        }
 
-        override fun onUnbindViewHolder(viewHolder: ViewHolder) {}
+            title = "${catalog.shop} — ${catalog.totalItems} товаров"
+        }
+    }
+
+    /** Открывает страницу товара на magnit.ru во внешнем браузере, если он есть на устройстве */
+    private fun openProduct(product: Product) {
+        val url = product.fullUrl
+        if (url.isNullOrBlank()) {
+            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
+        }
     }
 }
-
-

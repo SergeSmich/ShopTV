@@ -7,4 +7,19 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Фирменные цвета Магнита -->
+    <color name="magnit_red">#FFE30613</color>
+    <color name="magnit_dark">#FF1B1B1B</color>
+
+    <!-- Карточка товара -->
+    <color name="card_bg">#FF2A2A2A</color>
+    <color name="card_bg_focused">#FF3D3D3D</color>
+    <color name="card_image_bg">#FFFFFFFF</color>
+    <color name="card_title">#FFEFEFEF</color>
+    <color name="card_price">#FFFFFFFF</color>
+    <color name="card_old_price">#FF9E9E9E</color>
+
+    <!-- Фон экрана каталога -->
+    <color name="browse_background">#FF141414</color>
 </resources>

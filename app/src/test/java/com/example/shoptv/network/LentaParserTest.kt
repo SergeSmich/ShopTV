@@ -20,7 +20,7 @@ class LentaParserTest {
         assertEquals(1, list.size)
         val p = list[0]
         assertEquals("Test Product", p.title)
-        assertTrue(p.price.contains("123"))
+        assertEquals(123.45, p.price, 0.001)
         assertEquals("https://example.com/img.jpg", p.imageUrl)
         assertTrue(p.detailUrl!!.contains("/product/p123"))
         assertEquals("p123", p.id)

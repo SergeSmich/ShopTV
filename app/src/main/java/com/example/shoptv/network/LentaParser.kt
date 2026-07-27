@@ -36,7 +36,15 @@ object LentaParser {
                 val id = extractId(card, detailUrl)
 
                 if (!name.isNullOrBlank() && price != null) {
-                    result.add(Product(id = id ?: detailUrl ?: "", title = name, price = price, imageUrl = imageUrl, detailUrl = detailUrl))
+                    result.add(
+                        Product(
+                            id = id ?: detailUrl ?: "",
+                            title = name,
+                            price = price,
+                            imageUrl = imageUrl,
+                            detailUrl = detailUrl
+                        )
+                    )
                 }
             } catch (_: Exception) {
                 // ignore parse errors for individual cards
@@ -57,13 +65,20 @@ object LentaParser {
         return a?.attr("title")?.takeIf { it.isNotBlank() } ?: a?.text()?.trim()
     }
 
-    private fun extractPrice(card: Element): String? {
+    private fun extractPrice(card: Element): Double? {
         val candidates = listOf(".price", ".product-price", ".price__value", ".card__price")
         for (sel in candidates) {
-            val el = card.selectFirst(sel)
-            if (el != null) return el.text().trim()
+            val el = card.selectFirst(sel) ?: continue
+            parsePrice(el.text())?.let { return it }
         }
         return null
+    }
+
+    /** "123.45 ₽" / "1 234,50 руб" -> 123.45 / 1234.50 */
+    internal fun parsePrice(text: String): Double? {
+        val cleaned = text.replace('\u00A0', ' ').replace(" ", "").replace(',', '.')
+        val match = Regex("""\d+(\.\d+)?""").find(cleaned) ?: return null
+        return match.value.toDoubleOrNull()
     }
 
     private fun extractDetailUrl(card: Element, baseUrl: String): String? {
