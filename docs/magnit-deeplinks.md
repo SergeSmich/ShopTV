@@ -1,95 +1,130 @@
 # Deep links приложения Магнит
 
-Разобрано из APK `ru.tander.magnit` версии 8.109.0 (versionCode 1395709):
-`AndroidManifest.xml` и класс
-`ru.tander.magnit.magnit_core.core.deeplink.data.DeepLink`.
+Разобрано из APK `ru.tander.magnit` 8.109.0 (versionCode 1395709):
+`AndroidManifest.xml` и enum
+`ru.tander.magnit.magnit_core.core.deeplink.data.DeepLink` — 140 маршрутов
+с полным списком поддерживаемых query-параметров.
 
 Это публичный интерфейс: приложение само объявляет схемы в манифесте,
 любое стороннее приложение вправе их вызывать.
 
-## Главный вывод
+## Корзина
 
-**Маршрута корзины не существует.** Ни `magnit://cart`, ни варианта
-с параметрами. Передать собранный список товаров в приложение одной
-ссылкой нельзя — такого контракта Магнит не предоставляет.
-
-Корзина у них серверная, привязана к сессии авторизованного
-пользователя (`GET /webgate/v1/carts/lite` возвращает объект с UUID),
-и наполняется только запросами с токеном.
-
-## Что можно открыть
-
-### Товар
+Маршруты корзины существуют, но **параметров не принимают**:
 
 ```
-magnit://product
-magnit://catalog/good
-https://magnit.ru/product/{id}-{slug}      ← App Link, autoVerify
+magnit://dostavka/delivery/express/basket    DELIVERY_EXPRESS_CART
+magnit://dostavka/multicart                  DELIVERY_MULTICART
 ```
 
-HTTPS-ссылка на товар перехватывается приложением автоматически
-(`autoVerify="true"`), а при его отсутствии открывается в браузере.
-Это самый надёжный способ: работает всегда.
+Оба объявлены с пустым списком queries (`new String[0]`), то есть просто
+открывают экран корзины. Положить в неё товары ссылкой нельзя: корзина
+серверная, привязана к сессии, наполняется запросами с токеном.
 
-Так же обрабатываются `cosmetic.magnit.ru/product`,
-`apteka.magnit.ru/product`, `mm.ru/product`.
+## Товар — с прицелом в корзину
 
-### Каталог
+```
+magnit://product?catalogType=&storeCode=&storeType=&targetCart=&source=
+```
+
+Ключевой параметр — **`targetCart`**. Судя по названию, указывает, в какую
+корзину класть товар (у Магнита их несколько: доставка, экспресс,
+маркет — отсюда `multicart`). Открывает карточку товара сразу с нужным
+контекстом.
+
+Точную семантику надо проверять на устройстве: как минимум открывает
+карточку, максимум — подставляет корзину для кнопки «В корзину».
+
+Альтернатива, работающая всегда:
+
+```
+https://magnit.ru/product/{id}-{slug}?catalogType=&shopType=&shopCode=
+```
+
+App Link с `autoVerify="true"`: перехватывается приложением, при его
+отсутствии открывается в браузере. Это поле `detailUrl` в нашем каталоге.
+
+## Списки товаров
+
+```
+magnit://catalog/listing?title=&filters=&category=&term=
+```
+
+`filters` принимает JSON. В самом APK есть готовая константа:
+
+```
+magnit://catalog/listing?filters=[{"id":"onlyDiscount","value":"true"}]&title=Товары со скидкой
+```
+
+То есть можно открыть **произвольную выборку товаров** с заголовком.
+Стоит проверить, принимает ли `filters` фильтр по списку id товаров —
+если да, это ближайший аналог «передать корзину».
+
+Параметр `term` — поисковый запрос, тоже способ показать нужные позиции.
+
+```
+magnit://dostavka/*?title=&storeCode=&chainId=&filters=&category=&term=
+magnit://alreadyBought?catalogType=&storeType=      «уже покупали»
+magnit://favorites?catalogType=&storeType=&storeCode=
+```
+
+## Каталог
 
 ```
 magnit://catalog
-magnit://catalog/category
-magnit://catalog/hidden-category
-magnit://catalog/listing
-magnit://category
-magnit://dynamicCategory
-magnit://dostavka                          ← раздел доставки
+magnit://catalog/category?isPromo=&source_category_id=
+magnit://catalog/hidden-category?title=
+magnit://catalog/good
+magnit://category/*?storeType=&storeCode=&catalogType=&source=
+magnit://dynamicCategory/*?catalogType=&storeType=&storeCode=
 magnit://discounts?category_id=&is_from_today=
 ```
 
-### Произвольная веб-страница
+Готовые константы из APK:
 
 ```
-magnit://web?url={url}
-magnit://webWithAuth?url={url}&in_app={bool}
+magnit://discounts/?is_from_today=true
+magnit://discounts/?is_from_today=true&category_id=151
 ```
 
-`webWithAuth` открывает страницу **внутри приложения с сессией
-пользователя**. Это единственная лазейка в сторону авторизованных
-действий: если бы у magnit.ru был URL вида «добавить товары в корзину»,
-через него это сработало бы. Такого URL мы не нашли.
-
-### Прочее
+## Веб-страница с сессией
 
 ```
-magnit://loyaltyCard?showSbp=      карта лояльности
-magnit://pricechecker              сканер цен
-magnit://store-search              поиск магазинов
-magnit://recommendations           рекомендации
-magnit://personalpromotions/promo  персональные предложения
-magnit://recipes/                  рецепты
-magnit://clubs/products/*          клубы (алко, зоо, родители, красота)
-magnit://magnitPay/                оплата
-magnit://settings
+magnit://web?url=
+magnit://webWithAuth?url=&in_app=
 ```
 
-## Как это использовать в ShopTV
+`webWithAuth` открывает страницу **внутри приложения с авторизацией
+пользователя**. Если у magnit.ru найдётся URL, наполняющий корзину, —
+это рабочий путь к передаче списка.
 
-Пользователь собирает корзину у нас, а оформляет в Магните:
+## Прочее
 
-1. **Один товар** — `https://magnit.ru/product/{id}-{slug}` из поля
-   `detailUrl` каталога. Открывается и в приложении, и в браузере.
-2. **Список** — QR-код на экране телевизора, пользователь сканирует
-   телефоном и добавляет товары в своём приложении, где уже авторизован.
+```
+magnit://loyaltyCard?showSbp=     magnit://pricechecker
+magnit://store-search             magnit://favorites
+magnit://orders/detail/*          magnit://profile/history_order
+magnit://recommendations?screen_type=&catalog_type=&service=&goods_id=
+magnit://recipes/                 magnit://online-journal
+magnit://market/*?category_id=&sku_id=&sku_group_id=
+magnit://cosmetic/*               magnit://migom
+```
 
-Вводить логин пультом не нужно, наши данные никуда не уходят.
+## План для ShopTV
 
-## Чего делать не стоит
+1. **Один товар** — `https://magnit.ru/product/{id}-{slug}`, уже работает.
+2. **Проверить `targetCart`** у `magnit://product` — возможно, кладёт
+   товар в конкретную корзину.
+3. **Проверить `filters`** у `magnit://catalog/listing` — если принимает
+   список id, получим «открыть весь список» одной ссылкой.
+4. **Запасной вариант** — QR-код на телефон со списком товаров.
 
-В APK есть приватный API и антифрод Group-IB
-(`ru.tander.magnit.services.antifraud.facct`, заголовки `x-gib-*`).
-Вытаскивать оттуда механизм авторизации и притворяться официальным
-приложением — нарушение условий использования и технически хрупко:
-подписи меняются, токены протухают, любое обновление ломает интеграцию.
+Пункты 2 и 3 требуют проверки на реальном устройстве с установленным
+приложением Магнита: `adb shell am start -a android.intent.action.VIEW -d "..."`
 
-Deep links используем, приватную авторизацию — нет.
+## Граница
+
+В APK есть приватный API и антифрод Group-IB (`ru.fp.sdk`,
+`services.antifraud.facct`, заголовки `x-gib-*`), плюс блокировка VPN.
+Deep links используем — это публичный контракт. Приватную авторизацию
+не трогаем: технически хрупко и нарушает условия использования.
