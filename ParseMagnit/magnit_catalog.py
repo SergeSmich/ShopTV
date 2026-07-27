@@ -57,17 +57,18 @@ TILES_URL = "https://magnit.ru/webgate/v1/tiles"
 CATALOG_URL = "https://magnit.ru/catalog"
 
 # Запасной список категорий — ответ /tiles на момент разбора.
-# Используется, если API недоступен.
+# Третий элемент — вид раздела: обычный или скрытый (hidden-category),
+# у них разный формат адреса на сайте.
 FALLBACK_CATEGORIES = [
-    ("Новинки", "66205"),
-    ("Скидки", "63319"),
-    ("Готовая еда", "65055"),
-    ("Мясо и рыба", "66551"),
-    ("Молочное", "63963"),
-    ("Сладкое", "64697"),
-    ("Фан-зона", "114540"),
-    ("Только у нас", "107738"),
-    ("Заморозка", "64467"),
+    ("Новинки", "66205", "category"),
+    ("Скидки", "63319", "category"),
+    ("Готовая еда", "65055", "category"),
+    ("Мясо и рыба", "66551", "hidden"),
+    ("Молочное", "63963", "category"),
+    ("Сладкое", "64697", "category"),
+    ("Фан-зона", "114540", "category"),
+    ("Только у нас", "107738", "hidden"),
+    ("Заморозка", "64467", "category"),
 ]
 
 # Порядок строк на экране телевизора
@@ -151,10 +152,11 @@ def fetch_categories(session):
             for s in services:
                 action = s.get("action", "")
                 name = s.get("text")
-                # ловим и category/123, и hidden-category/123
-                m = re.search(r"(?:hidden-)?category/(\d+)", action)
+                # обычный раздел и скрытый лежат по разным адресам
+                m = re.search(r"(hidden-)?category/(\d+)", action)
                 if name and m:
-                    result.append((name, m.group(1)))
+                    kind = "hidden" if m.group(1) else "category"
+                    result.append((name, m.group(2), kind))
             if result:
                 print("  получено из API: %d категорий" % len(result))
                 return result
@@ -162,6 +164,15 @@ def fetch_categories(session):
     except Exception as e:
         print("  API недоступен (%s), берём запасной список" % e)
     return list(FALLBACK_CATEGORIES)
+
+
+def collect_slugs(html):
+    """Карта {id: slug} из ссылок вида /catalog/63963-testmmmolochnyy_prilavok"""
+    slugs = {}
+    for cat_id, slug in re.findall(r"/catalog/(\d+)-([a-z0-9_]+)", html):
+        if slug != "category":
+            slugs.setdefault(cat_id, slug)
+    return slugs
 
 
 def fetch_slugs(session):
@@ -178,25 +189,34 @@ def fetch_slugs(session):
         if r.status_code != 200:
             print("  HTTP %s — обойдёмся заглушкой" % r.status_code)
             return {}
-        found = re.findall(r"/catalog/(\d+)-([a-z0-9_]+)", r.text)
-        slugs = {}
-        for cat_id, slug in found:
-            slugs.setdefault(cat_id, slug)
-        print("  найдено адресов: %d" % len(slugs))
+        slugs = collect_slugs(r.text)
+        if slugs:
+            print("  найдено адресов: %d" % len(slugs))
+        else:
+            print("  на странице нет ссылок — адреса подберём по ходу")
         return slugs
     except Exception as e:
         print("  не удалось получить (%s) — обойдёмся заглушкой" % e)
         return {}
 
 
-def parse_category(session, name, cat_id, slugs):
-    """Возвращает список товаров категории со всеми полями."""
-    # сначала настоящий адрес, затем заглушка как запасной вариант
+def parse_category(session, name, cat_id, slugs, kind="category"):
+    """
+    Возвращает список товаров категории со всеми полями.
+
+    Адреса у Магнита двух видов:
+      обычный раздел  /catalog/63963-testmmmolochnyy_prilavok
+      скрытый раздел  /hidden-category/66551
+    """
     candidates = []
+    if kind == "hidden":
+        candidates.append("https://magnit.ru/hidden-category/%s" % cat_id)
     slug = slugs.get(cat_id)
     if slug:
         candidates.append("https://magnit.ru/catalog/%s-%s" % (cat_id, slug))
     candidates.append("https://magnit.ru/catalog/%s-category" % cat_id)
+    if kind != "hidden":
+        candidates.append("https://magnit.ru/hidden-category/%s" % cat_id)
 
     r = None
     for url in candidates:
@@ -213,6 +233,10 @@ def parse_category(session, name, cat_id, slugs):
     if r is None:
         print("       категория недоступна — пропускаем")
         return []
+
+    # страницы разделов содержат ссылки на соседние: пополняем карту адресов,
+    # чтобы следующие категории открылись с первой попытки
+    slugs.update(collect_slugs(r.text))
 
     soup = BeautifulSoup(r.text, "html.parser")
     script = soup.find("script", id="__NUXT_DATA__")
@@ -321,9 +345,11 @@ def main():
     all_products = []
     seen_titles = set()
 
-    for i, (name, cat_id) in enumerate(categories, 1):
+    for i, entry in enumerate(categories, 1):
+        name, cat_id = entry[0], entry[1]
+        kind = entry[2] if len(entry) > 2 else "category"
         print("  [%d/%d] %s" % (i, len(categories), name))
-        items = parse_category(session, name, cat_id, slugs)
+        items = parse_category(session, name, cat_id, slugs, kind)
 
         added = 0
         for p in items:
