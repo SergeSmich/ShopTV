@@ -71,17 +71,6 @@ FALLBACK_CATEGORIES = [
     ("Заморозка", "64467", "category"),
 ]
 
-# Подсмотренные в браузере адреса разделов, которые не открываются
-# по заглушке "-category". Магнит требует точный slug.
-KNOWN_SLUGS = {
-    "66205": "novinki_mesyatsa_mm_17077",
-    "63319": "supertseny_mm_8845",
-    "114540": "vozmite_k_matchu",
-    "65055": "testmmgotovaya_eda",
-    "63963": "testmmmolochnyy_prilavok",
-    "64697": "testmmsladosti",
-    "64467": "testmmzamorozka",
-}
 
 # Порядок строк на экране телевизора
 CATEGORY_ORDER = [
@@ -89,7 +78,15 @@ CATEGORY_ORDER = [
     "Заморозка", "Сладкое", "Фан-зона", "Новинки", "Только у нас",
 ]
 
-REQUEST_PAUSE = 1.5
+REQUEST_PAUSE = 1.0
+
+# Сколько разделов обходить. В меню Магнита их около 700, включая пустые
+# подкатегории — полный обход занимает больше 10 минут.
+# 0 = без ограничения.
+MAX_CATEGORIES = 120
+
+# Минимум товаров, чтобы раздел попал на экран отдельной строкой
+MIN_ROW_ITEMS = 8
 
 
 # --------------------------------------------------------------------------
@@ -142,77 +139,87 @@ def percent_from(sale_percent, price, old_price):
 # Сбор данных
 # --------------------------------------------------------------------------
 
+def extract_menu(html):
+    """
+    Дерево категорий из меню страницы.
+
+    Меню каталога отрисовано на сервере и лежит в __NUXT_DATA__ пунктами
+    вида {name: "Молочный прилавок", link: "/catalog/107727-bakaleya_copy_106"}.
+    Это и есть источник актуальных разделов: slug'и Магнит меняет,
+    поэтому зашивать их в код бессмысленно.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    script = soup.find("script", id="__NUXT_DATA__")
+    if not script or not script.string:
+        return []
+
+    try:
+        raw = json.loads(script.string)
+    except ValueError:
+        return []
+
+    def deref(v, depth=0):
+        if depth > 4:
+            return v
+        if isinstance(v, int) and 0 <= v < len(raw):
+            t = raw[v]
+            return deref(t, depth + 1) if isinstance(t, int) else t
+        return v
+
+    menu = OrderedDict()
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        link = deref(item.get("link") or item.get("url") or item.get("href"))
+        name = deref(item.get("name") or item.get("title") or item.get("text"))
+        if not (isinstance(link, str) and isinstance(name, str)):
+            continue
+        m = re.search(r"/catalog/(\d+)-([a-z0-9_]+)", link)
+        if not m:
+            continue
+        cat_id, slug = m.group(1), m.group(2)
+        if slug == "category":
+            continue
+        menu.setdefault(cat_id, (name.strip(), cat_id, slug))
+
+    return list(menu.values())
+
+
 def fetch_categories(session):
-    """Категории из мобильного API. При сбое — запасной список."""
+    """
+    Актуальное дерево категорий с сайта.
+
+    Раньше список был захардкожен, из-за чего разделы отваливались с 404,
+    как только Магнит менял slug. Теперь читаем меню живой страницы.
+    """
     print("Шаг 1. Категории каталога")
-    # мобильному API нужны свои заголовки, иначе отвечает 400
-    api_headers = dict(HEADERS)
-    api_headers.update({
-        "Accept": "application/json",
-        "x-client-name": "magnit",
-        "x-device-platform": "Web",
-        "x-device-id": "shoptv-parser",
-        "x-app-version": "2026.6.24-17.37",
-        "x-new-magnit": "true",
-        "Referer": "https://magnit.ru/catalog",
-    })
-    try:
-        r = session.get(TILES_URL, params=PARAMS, headers=api_headers, timeout=20)
-        if r.status_code == 200:
-            services = r.json().get("services", [])
-            result = []
-            for s in services:
-                action = s.get("action", "")
-                name = s.get("text")
-                # обычный раздел и скрытый лежат по разным адресам
-                m = re.search(r"(hidden-)?category/(\d+)", action)
-                if name and m:
-                    kind = "hidden" if m.group(1) else "category"
-                    result.append((name, m.group(2), kind))
-            if result:
-                print("  получено из API: %d категорий" % len(result))
-                return result
-        print("  API вернул %s, берём запасной список" % r.status_code)
-    except Exception as e:
-        print("  API недоступен (%s), берём запасной список" % e)
-    return list(FALLBACK_CATEGORIES)
 
+    # меню одинаковое на любой странице каталога — берём заведомо рабочую
+    seeds = [
+        "https://magnit.ru/catalog/63963-testmmmolochnyy_prilavok",
+        "https://magnit.ru/hidden-category/66551",
+        CATALOG_URL,
+    ]
 
-def collect_slugs(html):
-    """Карта {id: slug} из ссылок вида /catalog/63963-testmmmolochnyy_prilavok"""
-    slugs = {}
-    for cat_id, slug in re.findall(r"/catalog/(\d+)-([a-z0-9_]+)", html):
-        if slug != "category":
-            slugs.setdefault(cat_id, slug)
-    return slugs
-
-
-def fetch_slugs(session):
-    """
-    Карта {id_категории: slug} со страницы каталога.
-
-    Адрес категории имеет вид /catalog/63963-testmmmolochnyy_prilavok.
-    Заглушка "-category" срабатывает не всегда: часть разделов отдаёт 404,
-    поэтому берём настоящие slug'и из вёрстки каталога.
-    """
-    print("Шаг 1b. Адреса категорий")
-    try:
-        r = session.get(CATALOG_URL, params=PARAMS, headers=HEADERS, timeout=20)
+    for url in seeds:
+        try:
+            r = session.get(url, params=PARAMS, headers=HEADERS, timeout=20)
+        except Exception as e:
+            print("  %s — ошибка запроса (%s)" % (url.split("/")[-1], e))
+            continue
         if r.status_code != 200:
-            print("  HTTP %s — обойдёмся заглушкой" % r.status_code)
-            return {}
-        slugs = collect_slugs(r.text)
-        if slugs:
-            print("  найдено адресов: %d" % len(slugs))
-        else:
-            print("  на странице нет ссылок — адреса подберём по ходу")
-        return slugs
-    except Exception as e:
-        print("  не удалось получить (%s) — обойдёмся заглушкой" % e)
-        return {}
+            continue
+        menu = extract_menu(r.text)
+        if menu:
+            print("  найдено разделов: %d" % len(menu))
+            return menu
+
+    print("  не удалось прочитать меню, берём запасной список")
+    return [(n, i, None) for n, i, _ in
+            [(a, b, c) for a, b, c in FALLBACK_CATEGORIES]]
 
 
-def parse_category(session, name, cat_id, slugs, kind="category"):
+def parse_category(session, name, cat_id, slug=None):
     """
     Возвращает список товаров категории со всеми полями.
 
@@ -221,14 +228,10 @@ def parse_category(session, name, cat_id, slugs, kind="category"):
       скрытый раздел  /hidden-category/66551
     """
     candidates = []
-    if kind == "hidden":
-        candidates.append("https://magnit.ru/hidden-category/%s" % cat_id)
-    slug = slugs.get(cat_id)
     if slug:
         candidates.append("https://magnit.ru/catalog/%s-%s" % (cat_id, slug))
+    candidates.append("https://magnit.ru/hidden-category/%s" % cat_id)
     candidates.append("https://magnit.ru/catalog/%s-category" % cat_id)
-    if kind != "hidden":
-        candidates.append("https://magnit.ru/hidden-category/%s" % cat_id)
 
     r = None
     for url in candidates:
@@ -240,15 +243,10 @@ def parse_category(session, name, cat_id, slugs, kind="category"):
         if resp.status_code == 200:
             r = resp
             break
-        print("       HTTP %s на %s" % (resp.status_code, url.split("/")[-1]))
 
     if r is None:
-        print("       категория недоступна — пропускаем")
+        print("       раздел недоступен")
         return []
-
-    # страницы разделов содержат ссылки на соседние: пополняем карту адресов,
-    # чтобы следующие категории открылись с первой попытки
-    slugs.update(collect_slugs(r.text))
 
     soup = BeautifulSoup(r.text, "html.parser")
     script = soup.find("script", id="__NUXT_DATA__")
@@ -330,11 +328,19 @@ def build_catalog(all_products):
     if discounts:
         rows.append(OrderedDict([("title", "Скидки дня"), ("items", discounts)]))
 
+    # сначала разделы из заданного порядка, затем остальные — по наполненности
     ordered = [c for c in CATEGORY_ORDER if c in by_category]
-    ordered += [c for c in by_category if c not in CATEGORY_ORDER]
+    rest = [c for c in by_category if c not in CATEGORY_ORDER]
+    rest.sort(key=lambda c: -len(by_category[c]))
+    ordered += rest
 
     for name in ordered:
-        items = sorted(by_category[name], key=lambda p: (-p["discountPercent"], p["title"]))
+        items = by_category[name]
+        # мелкие подкатегории не выносим отдельной полкой — их товары
+        # всё равно попадают в общий список и в "Скидки дня"
+        if len(items) < MIN_ROW_ITEMS:
+            continue
+        items = sorted(items, key=lambda p: (-p["discountPercent"], p["title"]))
         rows.append(OrderedDict([("title", name), ("items", items)]))
 
     return OrderedDict([
@@ -352,18 +358,19 @@ def main():
     session = requests.Session()
     categories = fetch_categories(session)
 
-    slugs = dict(KNOWN_SLUGS)
-    slugs.update(fetch_slugs(session))
+    if MAX_CATEGORIES:
+        categories = categories[:MAX_CATEGORIES]
 
-    print("\nШаг 2. Товары по категориям")
+    print("\nШаг 2. Товары по разделам")
     all_products = []
     seen_titles = set()
+    empty = 0
 
     for i, entry in enumerate(categories, 1):
         name, cat_id = entry[0], entry[1]
-        kind = entry[2] if len(entry) > 2 else "category"
-        print("  [%d/%d] %s" % (i, len(categories), name))
-        items = parse_category(session, name, cat_id, slugs, kind)
+        slug = entry[2] if len(entry) > 2 else None
+
+        items = parse_category(session, name, cat_id, slug)
 
         added = 0
         for p in items:
@@ -374,9 +381,16 @@ def main():
             all_products.append(p)
             added += 1
 
-        with_img = len([p for p in items if p["imageUrl"]])
-        print("       найдено %d, новых %d, с фото %d" % (len(items), added, with_img))
+        if items:
+            print("  [%d/%d] %-32s товаров %3d, новых %3d"
+                  % (i, len(categories), name[:32], len(items), added))
+        else:
+            empty += 1
+
         time.sleep(REQUEST_PAUSE)
+
+    if empty:
+        print("\n  пустых разделов: %d (подкатегории без своих товаров)" % empty)
 
     if not all_products:
         sys.exit(
