@@ -8,11 +8,14 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Build output (все модули: app, core/*, feature/*)
+build/
+.kotlin/
 
 # Logs & system dumps
 crash_*.txt

@@ -1,6 +1,0 @@
-com.shoptv.core.network.test.network-debug-0 F:\Projects\ShopTV\core\model\build\intermediates\packaged_res\debug\packageDebugResources
-com.shoptv.core.network.test.network-androidTest-1 F:\Projects\ShopTV\core\network\build\generated\res\resValues\androidTest\debug
-com.shoptv.core.network.test.network-mergeDebugAndroidTestResources-2 F:\Projects\ShopTV\core\network\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
-com.shoptv.core.network.test.network-mergeDebugAndroidTestResources-3 F:\Projects\ShopTV\core\network\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
-com.shoptv.core.network.test.network-debugAndroidTest-4 F:\Projects\ShopTV\core\network\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
-com.shoptv.core.network.test.network-debug-5 F:\Projects\ShopTV\core\network\build\intermediates\packaged_res\debug\packageDebugResources
