@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kapt)
 }
 
 android {
@@ -34,8 +33,4 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.koin.android)
-
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
 }

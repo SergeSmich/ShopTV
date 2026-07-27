@@ -32,6 +32,15 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    
+    sourceSets {
+        getByName("androidTest") {
+            java.setSrcDirs(emptyList<File>())
+        }
+        getByName("test") {
+            java.setSrcDirs(emptyList<File>())
+        }
+    }
 }
 
 dependencies {
