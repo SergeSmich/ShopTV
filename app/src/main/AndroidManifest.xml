@@ -32,5 +32,20 @@
             android:exported="false"
             android:screenOrientation="landscape" />
 
+        <activity
+            android:name=".presentation.store.StoreSelectionActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name=".presentation.cart.CartActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name=".presentation.detail.ProductDetailActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
     </application>
 </manifest>

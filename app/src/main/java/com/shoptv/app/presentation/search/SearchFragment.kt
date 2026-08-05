@@ -80,15 +80,15 @@ class SearchFragment : SearchSupportFragment(),
     }
 
     private fun openProduct(product: UnifiedProduct) {
-        val link = product.deepLink
-        if (link.isNullOrBlank()) {
-            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
-            return
+        val intent = Intent(requireContext(), com.shoptv.app.presentation.detail.ProductDetailActivity::class.java).apply {
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_ID, product.id)
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_TITLE, product.title)
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_PRICE, product.priceCurrent)
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_OLD_PRICE, product.priceOld ?: 0.0)
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_IMAGE, product.imageUrl ?: "")
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_CATEGORY, product.categoryName ?: "")
+            putExtra(com.shoptv.app.presentation.detail.ProductDetailActivity.EXTRA_PRODUCT_DEEP_LINK, product.deepLink ?: "")
         }
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
-        }
+        startActivity(intent)
     }
 }

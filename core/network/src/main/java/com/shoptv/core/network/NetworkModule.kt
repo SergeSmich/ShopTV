@@ -21,8 +21,8 @@ object NetworkModule {
 
     fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(1, TimeUnit.SECONDS)
+        .readTimeout(2, TimeUnit.SECONDS)
         .build()
 
     fun createRetrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()

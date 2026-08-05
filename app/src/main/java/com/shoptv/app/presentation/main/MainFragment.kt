@@ -16,8 +16,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.shoptv.app.R
+import com.shoptv.app.presentation.cart.CartActivity
+import com.shoptv.app.presentation.cart.CartManager
 import com.shoptv.app.presentation.common.ProductCardPresenter
+import com.shoptv.app.presentation.detail.ProductDetailActivity
 import com.shoptv.app.presentation.search.SearchActivity
+import com.shoptv.app.presentation.store.StoreSelectionFragment
+import com.shoptv.app.presentation.store.StoreSelectionActivity
 import com.shoptv.core.model.UnifiedProduct
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -36,17 +41,34 @@ class MainFragment : BrowseSupportFragment() {
         brandColor = ContextCompat.getColor(requireContext(), R.color.magnit_red)
         adapter = rowsAdapter
 
+        // Клик — открыть товар, поиск, магазин или корзину
         setOnItemViewClickedListener { _, item, _, _ ->
-            (item as? UnifiedProduct)?.let { openProduct(it) }
-        }
-
-        // лупа в шапке — Leanback сам её рисует, нам нужен только переход
-        setOnSearchClickedListener {
-            startActivity(Intent(requireContext(), SearchActivity::class.java))
+            when (item) {
+                is UnifiedProduct -> openProduct(item)
+                is String -> {
+                    when {
+                        item.contains("Поиск") -> startActivity(Intent(requireContext(), SearchActivity::class.java))
+                        item.contains("магазин") -> startActivity(Intent(requireContext(), StoreSelectionActivity::class.java))
+                        item.contains("Корзина") -> startActivity(Intent(requireContext(), CartActivity::class.java))
+                    }
+                }
+            }
         }
 
         observeViewModel()
-        viewModel.loadMagnitCatalog()
+        loadCatalog()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Перезагружаем каталог при возврате из выбора магазина
+        loadCatalog()
+    }
+
+    private fun loadCatalog() {
+        val prefs = requireContext().getSharedPreferences(StoreSelectionFragment.PREFS_NAME, 0)
+        val storeCode = prefs.getString(StoreSelectionFragment.KEY_STORE_CODE, DEFAULT_STORE) ?: DEFAULT_STORE
+        viewModel.loadMagnitCatalog(storeCode = storeCode)
     }
 
     private fun observeViewModel() {
@@ -55,6 +77,23 @@ class MainFragment : BrowseSupportFragment() {
                 launch { viewModel.rows.collect { renderRows(it) } }
                 launch { viewModel.loading.collect { onLoadingChanged(it) } }
                 launch { viewModel.error.collect { onError(it) } }
+                launch { CartManager.count.collect { updateCartHeader() } }
+            }
+        }
+    }
+
+    private fun updateCartHeader() {
+        // Находим заголовок корзины и обновляем
+        for (i in 0 until rowsAdapter.size()) {
+            val listRow = rowsAdapter.get(i) as? ListRow ?: continue
+            if (listRow.id == HEADER_CART) {
+                val header = HeaderItem(HEADER_CART, "🛒 Корзина (${CartManager.getItems().size})")
+                // Обновляем заголовок через пересоздание строки
+                val newAdapter = ArrayObjectAdapter(ProductCardPresenter()).apply {
+                    add("🛒 Корзина (${CartManager.getItems().size})")
+                }
+                rowsAdapter.replace(i, ListRow(header, newAdapter))
+                break
             }
         }
     }
@@ -63,8 +102,32 @@ class MainFragment : BrowseSupportFragment() {
         rowsAdapter.clear()
         if (rows.isEmpty()) return
 
-        val cardPresenter = ProductCardPresenter()
+        val cardPresenter = ProductCardPresenter(
+            onLongClick = { product ->
+                CartManager.add(product)
+                Toast.makeText(requireContext(), "🛒 ${product.title}", Toast.LENGTH_SHORT).show()
+            }
+        )
         var total = 0
+
+        // Строка поиска
+        val searchAdapter = ArrayObjectAdapter(cardPresenter).apply {
+            add("🔍 Поиск товаров")
+        }
+        rowsAdapter.add(ListRow(HeaderItem(HEADER_SEARCH, "Поиск"), searchAdapter))
+
+        // Строка магазина
+        val storeAdapter = ArrayObjectAdapter(cardPresenter).apply {
+            add("🏪 Выбрать магазин")
+        }
+        rowsAdapter.add(ListRow(HeaderItem(HEADER_STORE, "Магазин"), storeAdapter))
+
+        // Строка корзины
+        val cartCount = CartManager.getItems().size
+        val cartAdapter = ArrayObjectAdapter(cardPresenter).apply {
+            add("🛒 Корзина ($cartCount)")
+        }
+        rowsAdapter.add(ListRow(HeaderItem(HEADER_CART, "Корзина"), cartAdapter))
 
         rows.forEachIndexed { index, row ->
             val rowAdapter = ArrayObjectAdapter(cardPresenter).apply {
@@ -84,7 +147,6 @@ class MainFragment : BrowseSupportFragment() {
         }
     }
 
-    /** Раньше ошибка молча уходила в никуда и экран оставался пустым */
     private fun onError(message: String?) {
         if (message.isNullOrBlank()) return
         title = getString(R.string.browse_title)
@@ -92,15 +154,22 @@ class MainFragment : BrowseSupportFragment() {
     }
 
     private fun openProduct(product: UnifiedProduct) {
-        val link = product.deepLink
-        if (link.isNullOrBlank()) {
-            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
-            return
+        val intent = Intent(requireContext(), ProductDetailActivity::class.java).apply {
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.id)
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_TITLE, product.title)
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_PRICE, product.priceCurrent)
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_OLD_PRICE, product.priceOld ?: 0.0)
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_IMAGE, product.imageUrl ?: "")
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_CATEGORY, product.categoryName ?: "")
+            putExtra(ProductDetailActivity.EXTRA_PRODUCT_DEEP_LINK, product.deepLink ?: "")
         }
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(requireContext(), product.title, Toast.LENGTH_SHORT).show()
-        }
+        startActivity(intent)
+    }
+
+    companion object {
+        private const val HEADER_SEARCH = -1L
+        private const val HEADER_STORE = -2L
+        private const val HEADER_CART = -3L
+        private const val DEFAULT_STORE = "781225"
     }
 }

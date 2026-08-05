@@ -10,7 +10,14 @@ import androidx.leanback.widget.Presenter
 import coil.load
 import com.shoptv.core.model.UnifiedProduct
 
-class ProductCardPresenter : Presenter() {
+/**
+ * Карточка товара для Leanback TV.
+ *
+ * Долгое нажатие — добавить в корзину.
+ */
+class ProductCardPresenter(
+    private val onLongClick: ((UnifiedProduct) -> Unit)? = null
+) : Presenter() {
 
     override fun onCreateViewHolder(parent: ViewGroup): ViewHolder {
         val ctx = parent.context
@@ -52,22 +59,36 @@ class ProductCardPresenter : Presenter() {
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, item: Any) {
-        val product = item as UnifiedProduct
         val refs = viewHolder.view.tag as? ViewRefs ?: return
-        refs.title.text = product.title
-        refs.price.text = buildString {
-            append(product.formattedPrice)
-            product.discountPercent?.let { append(" (-$it%)") }
-        }
-        refs.image.load(product.imageUrl) {
-            crossfade(true)
-            placeholder(android.R.color.darker_gray)
+        when (item) {
+            is UnifiedProduct -> {
+                refs.title.text = item.title
+                refs.price.text = buildString {
+                    append(item.formattedPrice)
+                    item.discountPercent?.let { append(" (-$it%)") }
+                }
+                refs.image.load(item.imageUrl) {
+                    crossfade(true)
+                    placeholder(android.R.color.darker_gray)
+                }
+                viewHolder.view.setOnLongClickListener {
+                    onLongClick?.invoke(item)
+                    true
+                }
+            }
+            is String -> {
+                refs.title.text = item
+                refs.price.text = ""
+                refs.image.setImageResource(android.R.drawable.ic_menu_search)
+                viewHolder.view.setOnLongClickListener(null)
+            }
         }
     }
 
     override fun onUnbindViewHolder(viewHolder: ViewHolder) {
         val refs = viewHolder.view.tag as? ViewRefs ?: return
         refs.image.setImageDrawable(null)
+        viewHolder.view.setOnLongClickListener(null)
     }
 
     private fun dpToPx(ctx: android.content.Context, dp: Int): Int =

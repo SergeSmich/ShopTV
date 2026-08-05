@@ -14,6 +14,7 @@ class MainViewModel(
     private val magnitRepository: MagnitRepository
 ) : ViewModel() {
 
+    // ─── Каталог ───
     private val _rows = MutableStateFlow<List<CatalogRow>>(emptyList())
     val rows: StateFlow<List<CatalogRow>> = _rows.asStateFlow()
 
@@ -23,12 +24,26 @@ class MainViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    fun loadMagnitCatalog(storeCode: String = DEFAULT_STORE) {
+    // ─── Настройки ───
+    private var currentStoreCode: String = DEFAULT_STORE
+    private var currentStoreType: String = DEFAULT_STORE_TYPE
+
+    /**
+     * Загрузка каталога.
+     * Offline-first: сразу из assets.
+     */
+    fun loadMagnitCatalog(
+        storeCode: String = currentStoreCode,
+        storeType: String = currentStoreType
+    ) {
+        currentStoreCode = storeCode
+        currentStoreType = storeType
+
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
 
-            when (val result = magnitRepository.getCatalogRows(storeCode)) {
+            when (val result = magnitRepository.getCatalogRows(storeCode, storeType)) {
                 is Result.Success -> _rows.value = result.data
                 is Result.Error -> {
                     _rows.value = emptyList()
@@ -41,6 +56,7 @@ class MainViewModel(
     }
 
     companion object {
-        private const val DEFAULT_STORE = "543358"
+        private const val DEFAULT_STORE = "781225"
+        private const val DEFAULT_STORE_TYPE = "express"
     }
 }

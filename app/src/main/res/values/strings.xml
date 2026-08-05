@@ -6,4 +6,6 @@
     <string name="search_found">Найдено: %1$d</string>
     <string name="search_nothing_found">Ничего не найдено</string>
     <string name="search_hint">Поиск товаров</string>
+    <string name="store_selection_title">Выбор магазина</string>
+    <string name="store_default">По умолчанию</string>
 </resources>
